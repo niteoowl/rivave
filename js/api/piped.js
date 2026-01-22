@@ -2,50 +2,51 @@
 const PipedAPI = {
     currentInstance: 0,
 
-    // Helper to fetch via local proxy
     async fetch(url, options = {}) {
-        // Always use our local proxy
-        const proxyUrl = `/proxy?url=${encodeURIComponent(url)}`;
+        const targetUrl = url;
+        const localProxyUrl = `/proxy?url=${encodeURIComponent(targetUrl)}`;
 
-        // Check Client Cache for GET requests
+        // Cache Check (GET only)
         if (!options.method || options.method === 'GET') {
-            const cached = Storage.get(proxyUrl);
+            const cached = Storage.get(localProxyUrl);
             if (cached && (Date.now() - cached.timestamp < CONFIG.CACHE_DURATION)) {
                 return cached.data;
             }
         }
 
-        try {
-            const response = await fetch(proxyUrl, {
+        const tryFetch = async (fetchUrl) => {
+            const response = await fetch(fetchUrl, {
                 ...options,
-                headers: {
-                    'Accept': 'application/json'
-                }
+                headers: { 'Accept': 'application/json' }
             });
-
             if (!response.ok) throw new Error(`Status ${response.status}`);
-
-            // Check for HTML response (SPA Fallback -> Proxy not running)
             const text = await response.text();
-            if (text.trim().startsWith('<')) {
-                console.error('API Error: Received HTML instead of JSON. Serverless Function (/proxy) is likely not running. If you are testing locally, use "wrangler pages dev".');
-                throw new Error('Proxy not active');
-            }
+            if (text.trim().startsWith('<')) throw new Error('HTML response');
+            return JSON.parse(text);
+        };
 
-            const data = JSON.parse(text);
+        try {
+            // 1. Try Local Proxy (Cloudflare)
+            const data = await tryFetch(localProxyUrl);
 
-            // Save to Cache
+            // Save Cache
             if (!options.method || options.method === 'GET') {
-                Storage.set(proxyUrl, {
-                    timestamp: Date.now(),
-                    data: data
-                });
+                Storage.set(localProxyUrl, { timestamp: Date.now(), data });
             }
-
             return data;
         } catch (e) {
-            console.warn(`Fetch failed for ${url}:`, e);
-            throw e;
+            console.warn(`Local proxy failed for ${url}, trying fallback...`, e);
+
+            try {
+                // 2. Fallback: Public Proxy (Client-side)
+                // Using allorigins as it's reliable for Piped
+                const fallbackUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+                const data = await tryFetch(fallbackUrl);
+                return data;
+            } catch (avgErr) {
+                console.error(`All fallbacks failed for ${url}:`, avgErr);
+                throw avgErr;
+            }
         }
     },
 

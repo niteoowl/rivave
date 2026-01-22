@@ -4,12 +4,10 @@ const CONFIG = {
     PIPED_API: 'https://pipedapi.kavin.rocks',
     PIPED_INSTANCES: [
         'https://pipedapi.kavin.rocks',
-        'https://pipedapi.adminforge.de',
-        'https://pipedapi.syncpundit.io',
-        'https://pipedapi.moomoo.me',
-        'https://pipedapi.drgns.space',
-        'https://piped-api.lunar.icu',
-        'https://pipedapi.in.projectsegfau.lt'
+        'https://pipedapi.systemless.io',
+        'https://api.piped.privacy.com.de',
+        'https://pipedapi.smnz.de',
+        'https://pipedapi.adminforge.de'
     ],
     DEEZER_API: 'https://api.deezer.com',
     DEEZER_PROXY: '/proxy?url=',

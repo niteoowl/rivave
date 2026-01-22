@@ -1,44 +1,45 @@
 // Deezer API - Music Metadata (Using Local Proxy)
 const DeezerAPI = {
-    // Helper to fetch via local proxy
+    // Helper to fetch via local proxy with fallback
     async fetch(endpoint) {
         const targetUrl = CONFIG.DEEZER_API + endpoint;
-        const proxyUrl = `/proxy?url=${encodeURIComponent(targetUrl)}`;
-
-        // Cache Key
+        const localProxyUrl = `/proxy?url=${encodeURIComponent(targetUrl)}`;
         const cacheKey = `deezer:${endpoint}`;
 
-        // Metadata Cache: 24 hours
+        // Check Cache (Metadata Cache: 24 hours)
         const cached = Storage.get(cacheKey);
         if (cached && (Date.now() - cached.timestamp < 1000 * 60 * 60 * 24)) {
             return cached.data;
         }
 
-        try {
-            const response = await fetch(proxyUrl);
-            if (!response.ok) return null;
+        const tryFetch = async (fetchUrl) => {
+            const response = await fetch(fetchUrl);
+            if (!response.ok) throw new Error('Network response was not ok');
 
-            // Check if we received HTML (likely SPA fallback 'index.html' -> Proxy not running)
-            const contentType = response.headers.get('content-type');
             const text = await response.text();
+            if (text.trim().startsWith('<')) throw new Error('Received HTML');
 
-            if (text.trim().startsWith('<')) {
-                console.error('API Error: Received HTML instead of JSON. Serverless Function (/proxy) is likely not running. If you are testing locally, use "wrangler pages dev".');
-                return null;
-            }
+            return JSON.parse(text);
+        };
 
-            const data = JSON.parse(text);
-
-            // Save to Cache
-            Storage.set(cacheKey, {
-                timestamp: Date.now(),
-                data: data
-            });
-
+        try {
+            // 1. Try Local Proxy
+            const data = await tryFetch(localProxyUrl);
+            Storage.set(cacheKey, { timestamp: Date.now(), data });
             return data;
         } catch (e) {
-            console.error('Deezer API Error:', e);
-            return null;
+            console.warn(`Local proxy failed for Deezer, trying fallback...`, e);
+
+            try {
+                // 2. Fallback: Public Proxy
+                const fallbackUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+                const data = await tryFetch(fallbackUrl);
+                Storage.set(cacheKey, { timestamp: Date.now(), data });
+                return data;
+            } catch (fallbackErr) {
+                console.error('Deezer API Fallback Error:', fallbackErr);
+                return null;
+            }
         }
     },
 

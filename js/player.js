@@ -105,9 +105,9 @@ const Player = {
         try {
             UI.showLoading();
 
-            // Search for the track on Piped (YouTube)
+            // Search for the track on Invidious (YouTube)
             const searchQuery = `${track.title} ${track.artist}`;
-            const results = await PipedAPI.search(searchQuery);
+            const results = await InvidiousAPI.search(searchQuery);
 
             if (results.length === 0) {
                 UI.showToast('음악을 찾을 수 없습니다');
@@ -122,11 +122,11 @@ const Player = {
             let videoResult = results.find(r =>
                 (r.title?.toLowerCase().includes(lowerTitle) ||
                     r.title?.toLowerCase().includes(lowerArtist)) &&
-                r.type === 'stream'
+                r.type === 'video'
             ) || results[0];
 
             // Get video ID
-            const videoId = videoResult.url?.split('?v=')[1] || videoResult.url?.replace('/watch?v=', '');
+            const videoId = videoResult.videoId;
             if (!videoId) {
                 UI.showToast('스트림을 가져올 수 없습니다');
                 UI.hideLoading();
@@ -134,7 +134,7 @@ const Player = {
             }
 
             // Get audio URL
-            const audioData = await PipedAPI.getAudioUrl(videoId);
+            const audioData = await InvidiousAPI.getAudioUrl(videoId);
             if (!audioData || !audioData.url) {
                 UI.showToast('오디오 URL을 가져올 수 없습니다');
                 UI.hideLoading();

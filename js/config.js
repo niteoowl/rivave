@@ -1,13 +1,17 @@
 // Configuration - Apple Music Clone
 const CONFIG = {
     // API Endpoints
-    PIPED_API: 'https://pipedapi.kavin.rocks',
-    PIPED_INSTANCES: [
-        'https://pipedapi.kavin.rocks',
-        'https://pipedapi.systemless.io',
-        'https://api.piped.privacy.com.de',
-        'https://pipedapi.smnz.de',
-        'https://pipedapi.adminforge.de'
+    INVIDIOUS_INSTANCES: [
+        'https://yewtu.be',
+        'https://yt.artemislena.eu',
+        'https://invidious.flokinet.to',
+        'https://invidious.privacydev.net',
+        'https://iv.melmac.space',
+        'https://inv.nadeko.net',
+        'https://inv.tux.pizza',
+        'https://invidious.protokolla.fi',
+        'https://invidious.private.coffee',
+        'https://yt.drgnz.club'
     ],
     DEEZER_API: 'https://api.deezer.com',
     DEEZER_PROXY: '/proxy?url=',
